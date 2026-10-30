@@ -1,0 +1,31 @@
+{
+  "id": "fictional_holdout_H1",
+  "persona_id": "dana",
+  "fictional": true,
+  "turns": [
+    {
+      "q": "Tell me about the last time an alarm was unclear.",
+      "a": "I get a colleague to verify what the alert means before continuing."
+    },
+    {
+      "q": "How do you learn a new pump?",
+      "a": "Usually somebody walks us through it briefly around shift change."
+    },
+    {
+      "q": "What do you check before starting?",
+      "a": "I verify the medication amount before initiating delivery."
+    },
+    {
+      "q": "What happens when setup takes too long?",
+      "a": "I put a visible note where I will see it again."
+    },
+    {
+      "q": "Do you use a named analytics platform?",
+      "a": "That is outside what I work with, so I cannot name one."
+    },
+    {
+      "q": "Would you always follow every optional screen?",
+      "a": "No. Immediate care can take priority over optional prompts."
+    }
+  ]
+}

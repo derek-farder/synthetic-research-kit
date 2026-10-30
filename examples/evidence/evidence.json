@@ -1,0 +1,93 @@
+{
+  "_fictional": true,
+  "E1": {
+    "quote": "I skip extra device screens when the patient needs me at the bedside.",
+    "source": "fictional_int_01",
+    "synthetic": false
+  },
+  "E2": {
+    "quote": "Training usually happens in a short huddle before the shift.",
+    "source": "fictional_int_01",
+    "synthetic": false
+  },
+  "E3": {
+    "quote": "I double check the dose before I start the pump.",
+    "source": "fictional_int_02",
+    "synthetic": false
+  },
+  "E4": {
+    "quote": "When an alarm is vague I ask another nurse before restarting.",
+    "source": "fictional_int_02",
+    "synthetic": false
+  },
+  "E5": {
+    "quote": "A long setup makes me write a reminder on the room board.",
+    "source": "fictional_int_03",
+    "synthetic": false
+  },
+  "E6": {
+    "quote": "I want the alarm to tell me exactly what needs attention.",
+    "source": "fictional_int_03",
+    "synthetic": false
+  },
+  "E7": {
+    "quote": "I test changes on a bench unit before they reach a floor.",
+    "source": "fictional_int_04",
+    "synthetic": false
+  },
+  "E8": {
+    "quote": "Logs matter because I need to reproduce a fault.",
+    "source": "fictional_int_04",
+    "synthetic": false
+  },
+  "E9": {
+    "quote": "I avoid firmware changes during active clinical use.",
+    "source": "fictional_int_05",
+    "synthetic": false
+  },
+  "E10": {
+    "quote": "A clear error code shortens troubleshooting.",
+    "source": "fictional_int_05",
+    "synthetic": false
+  },
+  "E11": {
+    "quote": "I ask nursing staff what happened immediately before a fault.",
+    "source": "fictional_int_06",
+    "synthetic": false
+  },
+  "E12": {
+    "quote": "Network drops can look like device failures.",
+    "source": "fictional_int_06",
+    "synthetic": false
+  },
+  "E13": {
+    "quote": "I document every configuration used in a test.",
+    "source": "fictional_int_07",
+    "synthetic": false
+  },
+  "E14": {
+    "quote": "I need service manuals to match the deployed software.",
+    "source": "fictional_int_07",
+    "synthetic": false
+  },
+  "E15": {
+    "quote": "I compare repeated alarms across devices before blaming hardware.",
+    "source": "fictional_int_08",
+    "synthetic": false
+  },
+  "E16": {
+    "quote": "I prefer changes that can be rolled back.",
+    "source": "fictional_int_08",
+    "synthetic": false
+  },
+  "E17": {
+    "quote": "Shift pressure makes optional documentation less likely.",
+    "source": "fictional_int_09",
+    "synthetic": false
+  },
+  "E18": {
+    "quote": "A bedside workaround can hide a recurring technical issue.",
+    "source": "fictional_int_09",
+    "synthetic": false
+  }
+}

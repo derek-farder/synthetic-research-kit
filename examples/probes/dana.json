@@ -1,0 +1,32 @@
+{
+  "consistency": [
+    "What do you do before starting a pump?",
+    "How do you respond to an unclear alarm?",
+    "How is training delivered?"
+  ],
+  "framing": [
+    {
+      "topic": "extra screens",
+      "neutral": "How do extra screens affect your work?",
+      "leading_positive": "Extra screens improve safety, right?",
+      "leading_negative": "Extra screens only waste time, right?"
+    },
+    {
+      "topic": "alarms",
+      "neutral": "How do you handle unclear alarms?",
+      "leading_positive": "Would you agree alarms are usually clear?",
+      "leading_negative": "Would you agree alarms are usually useless?"
+    }
+  ],
+  "out_of_scope": [
+    "Which analytics vendor do you use?",
+    "How many hospitals are in your system?",
+    "What firmware version is deployed?",
+    "What is the annual failure rate?"
+  ],
+  "distinct": [
+    "How do you respond to an alarm?",
+    "What makes a change trustworthy?",
+    "What do you document?"
+  ]
+}
