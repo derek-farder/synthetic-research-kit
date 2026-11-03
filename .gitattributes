@@ -1,3 +1,6 @@
 *.md text eol=lf
 *.py text eol=lf
 *.json text eol=lf
+*.jsonl text eol=lf
+# Raw sources are byte-preserved: never normalize their line endings.
+**/sources/raw/** -text

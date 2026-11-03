@@ -1,0 +1,4 @@
+respondent_id,segment,wave,journey_stage,response
+R1,Segment A,Wave 1,setup,"I was not sure whether setup had finished, so I checked again."
+R2,Segment B,Wave 2,setup,"I repeated the last step because there was no obvious confirmation."
+R3,Segment A,Wave 2,support,"When I still could not tell, I looked for help."

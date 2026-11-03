@@ -1,27 +1,31 @@
-# Synthetic Research Kit
+# Synthetic Research OS v3
+Platform-agnostic, evidence-first research tooling for grounded synthetic personas, research simulation, insight discovery, persona evolution, validation, and client-ready research reporting.
 
-A VS Code GitHub Copilot workspace for pressure-testing discussion guides with grounded synthetic personas. Synthetic output is always a hypothesis, never a research finding.
+**Synthetic output is hypothesis, not research evidence.** Start with `START-HERE.md`; architecture is in `ARCHITECTURE.md`.
 
-## Setup
-
+## macOS setup
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows PowerShell: .venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
 git config core.hooksPath .githooks
 ./scripts/load-example.sh
 python -m unittest discover -s tests -v
 ```
 
-Open the repository in VS Code with GitHub Copilot Chat enabled. The workspace includes repository-wide instructions, two custom agents, and six workflow skills.
+Open the repository in VS Code with GitHub Copilot Chat, or in Claude Code. Both adapters expose the same canonical skills under `/skills/` and the `persona-runner`, `insights-analyst` and `skeptic` agents.
 
 ## Key commands
-
 ```bash
-./scripts/persona-lab lint --persona personas/dana.md --evidence evidence/evidence.json --out calibration/dana/lint
-./scripts/persona-lab all --persona personas/dana.md --others personas --evidence evidence/evidence.json --holdout holdout --probes calibration/probes/dana.json --out calibration/dana/mock --mock
+python scripts/new_client.py <client-id>
+python scripts/ingest_sources.py clients/<client-id>
+python scripts/promote_persona_version.py clients/<client-id> <proposal.json>
+./scripts/persona-lab lint --persona clients/fictional-medtech/personas/versions/dana/1.0.md --evidence clients/fictional-medtech/evidence --out clients/fictional-medtech/validation/dana/1.0/lint
+./scripts/persona-lab all --persona clients/fictional-medtech/personas/versions/dana/1.0.md --evidence clients/fictional-medtech/evidence --holdout clients/fictional-medtech/holdout --probes clients/fictional-medtech/validation/probes/dana.json --out clients/fictional-medtech/validation/dana/1.0/mock --mock
+python scripts/new_study.py <study-id>
 python scripts/check_study.py studies/2026-10-infusion-pump
 python scripts/export_synthesis.py studies/2026-10-infusion-pump
+python scripts/migrate_legacy_client.py clients/<client-id> --dry-run
 ```
 
-The included model backend is deterministic mock-only. It verifies plumbing but cannot calibrate a persona. Add an approved live model adapter before real calibration.
+The included model backend is deterministic mock-only. It verifies plumbing but cannot validate a persona. Add an approved live model adapter before real validation.

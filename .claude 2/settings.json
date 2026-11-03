@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(./clients/*/holdout/**)",
+      "Read(./holdout/**)",
+      "Read(./examples/holdout/**)",
+      "Edit(./clients/*/sources/raw/**)",
+      "Edit(./examples/client-fictional-medtech/sources/raw/**)"
+    ]
+  }
+}

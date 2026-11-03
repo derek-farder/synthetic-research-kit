@@ -8,9 +8,28 @@ def frontmatter(text):
         if ':' in line:
             k,v=line.split(':',1); d[k.strip()]=v.strip()
     return d,body.lstrip('\n')
-def load_evidence(path):
-    data=json.loads(Path(path).read_text(encoding='utf-8'))
+def _load_evidence_file(path):
+    path=Path(path)
+    if path.suffix=='.jsonl':
+        # v3 normalized evidence records (schemas/evidence-record.schema.json)
+        out={}
+        for line in path.read_text(encoding='utf-8').splitlines():
+            if line.strip():
+                r=json.loads(line); out[r['id']]={'quote':r.get('text') or '','source':r.get('source_id','unknown'),'synthetic':bool(r.get('synthetic'))}
+        return out
+    data=json.loads(path.read_text(encoding='utf-8'))
     return {k:({'quote':v,'source':'unknown','synthetic':False} if isinstance(v,str) else v) for k,v in data.items() if not k.startswith('_')}
+def load_evidence(path):
+    """Load evidence.json, evidence.jsonl, or a client evidence/ directory holding either or both."""
+    p=Path(path)
+    if not p.is_dir(): return _load_evidence_file(p)
+    out={}
+    for f in (p/'evidence.json',p/'evidence.jsonl'):
+        if f.exists():
+            for k,v in _load_evidence_file(f).items():
+                if k in out: raise ValueError(f'duplicate evidence id {k} in {p}')
+                out[k]=v
+    return out
 def load_persona(path):
     text=Path(path).read_text(encoding='utf-8'); fm,body=frontmatter(text); claims=[]
     sec=False; profile=[]; inprof=False

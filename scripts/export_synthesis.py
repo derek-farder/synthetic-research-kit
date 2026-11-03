@@ -8,7 +8,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parent))
 from check_study import check
 HEADER='SIMULATED RESEARCH - HYPOTHESES, NOT FINDINGS'
 def main():
- ap=argparse.ArgumentParser(); ap.add_argument('study'); ap.add_argument('--out'); ap.add_argument('--allow-unreviewed',action='store_true'); a=ap.parse_args(); study=Path(a.study).resolve(); w,e=check(study)
+ ap=argparse.ArgumentParser(); ap.add_argument('study'); ap.add_argument('--out'); ap.add_argument('--allow-unreviewed',action='store_true'); ap.add_argument('--client'); a=ap.parse_args(); study=Path(a.study).resolve(); w,e=check(study,a.client)
  if e: [print('ERROR:',x) for x in e]; return 1
  reviewed=(study/'skeptic-review.md').exists()
  if not reviewed and not a.allow_unreviewed: print('ERROR: skeptic review missing'); return 1

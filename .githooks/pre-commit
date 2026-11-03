@@ -4,14 +4,17 @@ import subprocess
 import sys
 
 BLOCKED = (
+    "clients/",
+    "studies/",
+    # Legacy flat locations (pre-v3)
     "personas/",
     "evidence/",
     "holdout/",
     "calibration/",
-    "studies/",
 )
 
 ALLOWED = (
+    "clients/_template/",
     "studies/_template/",
 )
 
