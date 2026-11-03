@@ -6,6 +6,7 @@ description: Run version-specific validation.
 Validation is pinned to one exact persona version and execution configuration (persona model, judge model, harness version). It is the only workflow that consumes holdout, and only through the harness; agents never open holdout files directly.
 
 - Require a real model API configuration. `--mock` tests plumbing only and cannot establish any validation status.
+- Configure persona and judge deployments independently through the provider-neutral adapter; see `docs/PERSONA-LAB.md`. Do not select a provider or deployment by default, and never store credentials in the repository.
 - Require persona-specific holdout data in `clients/<client>/holdout/` and probes at `clients/<client>/validation/probes/<id>.json`. If probes are missing, draft consistency, framing, out-of-scope and distinctiveness probes for user review first.
 - Prefer a judge model different from the persona model when available.
 - Run `scripts/persona-lab all --persona clients/<client>/personas/versions/<id>/<version>.md --evidence clients/<client>/evidence --holdout clients/<client>/holdout --probes clients/<client>/validation/probes/<id>.json --out clients/<client>/validation/<id>/<version>/<YYYY-MM-DD>-<label>`.

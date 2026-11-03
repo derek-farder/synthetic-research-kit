@@ -17,7 +17,7 @@ Deterministic tools:
 
 Safety boundaries:
 - Holdout is validation-only; never inspect `clients/*/holdout/**` except through the harness.
-- Raw source is not edited. Never use synthetic material as real evidence.
+- Raw source is not edited. Distinguish source provenance from fixture status: fabricated fixture inputs may be designated source evidence for acceptance tests, while simulation-provenance outputs are never persona grounding.
 - Persona versions are immutable after promotion; studies pin exact versions.
 - Research reports may discuss supported journey/process impacts but do not invent journey stages or backstage operations, and the system does not generate service blueprints or journey maps.
 - Never force-add client-data paths to git. Keep committed examples fictional.

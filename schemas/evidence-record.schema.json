@@ -1,1 +1,118 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["id","source_id","evidence_type","synthetic"],"properties":{"id":{"type":"string"},"source_id":{"type":"string"},"source_unit":{"type":["string","null"]},"evidence_type":{"type":"string"},"text":{"type":["string","null"]},"metric":{"type":["string","null"]},"value":{},"base_n":{"type":["integer","null"]},"observed_date":{"type":["string","null"]},"research_wave":{"type":["string","null"]},"ingestion_batch":{"type":"string"},"dimensions":{"type":"object"},"synthetic":{"const":false}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["id", "source_id", "evidence_type", "provenance_type", "fixture"],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string"
+    },
+    "source_unit": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "evidence_type": {
+      "type": "string"
+    },
+    "text": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "metric": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "value": {},
+    "base_n": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "observed_date": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "research_wave": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "ingestion_batch": {
+      "type": "string"
+    },
+    "dimensions": {
+      "type": "object"
+    },
+    "provenance_type": {
+      "enum": ["source", "derived", "analytical", "simulation"]
+    },
+    "fixture": {
+      "type": "boolean"
+    },
+    "source_lineage": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true
+    },
+    "derivation_method": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "provenance_type": {
+            "const": "derived"
+          }
+        },
+        "required": ["provenance_type"]
+      },
+      "then": {
+        "required": ["source_lineage", "derivation_method", "scope"],
+        "properties": {
+          "source_lineage": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "provenance_type": {
+            "const": "analytical"
+          }
+        },
+        "required": ["provenance_type"]
+      },
+      "then": {
+        "required": ["source_lineage"],
+        "properties": {
+          "source_lineage": {
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ]
+}

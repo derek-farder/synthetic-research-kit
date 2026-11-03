@@ -21,6 +21,12 @@ def xlsx_rows(p):
   for i,row in enumerate(it,2):yield ws.title,i,{h[j]:v for j,v in enumerate(row) if j<len(h) and h[j]}
 def main():
  ap=argparse.ArgumentParser();ap.add_argument('client_dir');a=ap.parse_args();c=Path(a.client_dir);raw=c/'sources/raw';ev=c/'evidence/evidence.jsonl';regp=c/'sources/source-registry.json';bp=c/'evidence/ingestion-batches.json'
+ client_config_path=c/'client.json'
+ if not client_config_path.is_file():raise SystemExit(f'missing client metadata: {client_config_path}')
+ client_config=json.loads(client_config_path.read_text(encoding='utf-8'))
+ if not isinstance(client_config,dict):raise SystemExit(f'{client_config_path} must contain a JSON object')
+ fixture=client_config.get('fixture')
+ if not isinstance(fixture,bool):raise SystemExit(f'{c}/client.json must define fixture as a boolean')
  reg=json.loads(regp.read_text()) if regp.exists() else {'sources':[]};known={x['sha256'][:12] for x in reg['sources']}
  # raw sources are immutable: stop before writing anything if a registered file changed
  changed=[x['file'] for x in reg['sources'] if (c/x['file']).is_file() and not sh(c/x['file']).startswith(x['sha256'])]
@@ -31,7 +37,7 @@ def main():
   if h[:12] in known:continue
   sid='SRC-'+h[:12].upper();srcs.append(sid);reg['sources'].append({'id':sid,'file':str(p.relative_to(c)),'sha256':h,'file_type':p.suffix.lower().lstrip('.'),'registered_at':now(),'observed_date':None,'research_wave':None,'population':None,'method':None})
   def add(unit,typ,text=None,dims=None):
-   nonlocal created;created+=1;append(ev,{'id':f'E-{bid[4:]}-{created:06d}','source_id':sid,'source_unit':str(unit),'evidence_type':typ,'text':text,'metric':None,'value':None,'base_n':None,'observed_date':None,'research_wave':None,'ingestion_batch':bid,'dimensions':dims or {},'synthetic':False})
+   nonlocal created;created+=1;append(ev,{'id':f'E-{bid[4:]}-{created:06d}','source_id':sid,'source_unit':str(unit),'evidence_type':typ,'text':text,'metric':None,'value':None,'base_n':None,'observed_date':None,'research_wave':None,'ingestion_batch':bid,'dimensions':dims or {},'provenance_type':'source','fixture':fixture})
   s=p.suffix.lower()
   if s in ('.txt','.md'):add('document','text',p.read_text(errors='replace'))
   elif s=='.docx':add('document','text',docx_text(p))

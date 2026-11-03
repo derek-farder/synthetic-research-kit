@@ -7,6 +7,10 @@ class T(unittest.TestCase):
    self.assertTrue((R/p).exists(),p)
  def test_schemas(self):
   for p in (R/'schemas').glob('*.json'):json.loads(p.read_text())
+  evidence=json.loads((R/'schemas/evidence-record.schema.json').read_text())
+  self.assertIn('provenance_type',evidence['required']);self.assertIn('fixture',evidence['required'])
+  self.assertEqual(evidence['properties']['provenance_type']['enum'],['source','derived','analytical','simulation'])
+  self.assertEqual(evidence['properties']['fixture']['type'],'boolean')
  def test_no_blueprints(self):
   self.assertFalse((R/'outputs/service-blueprint').exists());self.assertFalse((R/'outputs/journey-map').exists())
  def test_thin_adapters(self):

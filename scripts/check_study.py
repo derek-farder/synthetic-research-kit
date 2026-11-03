@@ -74,7 +74,8 @@ def check(study,client=None):
     try: ev=load_evidence(client/'evidence' if client is not None else root/'evidence/evidence.json')
     except: ev={}
     if eid not in ev: errors.append(f'missing REAL evidence: {eid}')
-    elif ev[eid].get('synthetic'): errors.append(f'REAL tag cites synthetic evidence: {eid}')
+    elif not ev[eid].get('grounding_eligible',False):
+     errors.append(f"REAL tag cites ineligible evidence {eid}: {ev[eid].get('eligibility_reason','unknown eligibility')}")
  m=re.search(r'^##+\s+Hypotheses\s*$([\s\S]*?)(?=^##+\s|\Z)',text,re.I|re.M)
  if m:
   for line in m.group(1).splitlines():

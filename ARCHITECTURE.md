@@ -2,7 +2,7 @@
 This is a research system, not a service-blueprint or journey-map production suite. Journey stages and process points are analytical dimensions inside evidence, insights, studies, and reports.
 
 ## Portable engines
-- Evidence Engine: raw sources -> registration -> normalized evidence -> mappings/constructs.
+- Evidence Engine: raw sources -> registration -> normalized evidence -> mappings/constructs. Evidence `provenance_type` (source, derived, analytical, simulation) is independent from client fixture status; fixture metadata never changes grounding eligibility.
 - Audience Engine: imported audience models, evidence-derived patterns, persona claims, immutable versions, change rationale.
 - Insights Engine: signals, change, contradictions, whitespace, feature hypotheses, segment evolution, journey-stage/process-point impacts.
 - Validation Engine: grounding, leakage, backtest, coherence, framing resistance, abstention, distinctiveness; future cross-model stability.
@@ -19,6 +19,7 @@ Human gates: mapping changes that alter audience meaning; persona promotion; ins
 ```
 clients/<client>/
   CLIENT.md
+  client.json                  client id, fixture status, and real-data status
   sources/raw/                 immutable raw files
   sources/source-registry.json
   evidence/                    evidence.jsonl (normalized), evidence.json (legacy curated excerpts),

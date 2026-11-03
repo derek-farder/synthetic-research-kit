@@ -2,7 +2,7 @@ import json,os,shutil,subprocess,sys,tempfile,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools/persona-lab'))
-from persona_lab.core import load_evidence
+from persona_lab.core import lint_persona,load_evidence
 def run(*args,**kw): return subprocess.run([sys.executable,*map(str,args)],capture_output=True,text=True,**kw)
 def body(p): return p.read_text().split('---',2)[2]
 def legacy_client(d):
@@ -62,6 +62,15 @@ class Checker(unittest.TestCase):
  def test_run_version_must_match_pin(self):
   self.pin('1.0'); r=self.study/'runs/dana-r1.md'; r.write_text(r.read_text().replace('persona: dana','persona: dana\npersona_version: 2.0',1))
   self.assertEqual(self.check().returncode,1)
+ def test_real_quote_rejects_simulation_provenance(self):
+  evidence_path=self.client/'evidence/evidence.json'
+  evidence=json.loads(evidence_path.read_text()); evidence['E1']['synthetic']=True
+  evidence_path.write_text(json.dumps(evidence))
+  synthesis=self.study/'synthesis.md'
+  synthesis.write_text(synthesis.read_text()+'\n> "Simulated text." [REAL: E1]\n')
+  result=self.check()
+  self.assertEqual(result.returncode,1)
+  self.assertIn('ineligible evidence E1',result.stdout)
 class Promotion(unittest.TestCase):
  def test_requires_approval_and_change_record_and_never_overwrites(self):
   with tempfile.TemporaryDirectory() as td:
@@ -75,23 +84,101 @@ class Promotion(unittest.TestCase):
    v=c/'personas/versions/dana/1.0.md'; first=v.read_bytes(); draft.write_text('changed')
    self.assertNotEqual(promote(approval='approved').returncode,0); self.assertEqual(v.read_bytes(),first)
 class Ingestion(unittest.TestCase):
+ def test_fixture_status_comes_from_client_metadata(self):
+  with tempfile.TemporaryDirectory() as td:
+   c=Path(td)/'northstar'; shutil.copytree(ROOT/'clients/_template',c)
+   config=c/'client.json'; config.write_text(json.dumps({'client_id':'northstar','fixture':True,'real_client_data':False}))
+   shutil.copy(ROOT/'examples/client-fictional-medtech/sources/raw/example.csv',c/'sources/raw/example.csv')
+   result=run(ROOT/'scripts/ingest_sources.py',c)
+   self.assertEqual(result.returncode,0,result.stderr)
+   rows=[json.loads(line) for line in (c/'evidence/evidence.jsonl').read_text().splitlines() if line]
+   self.assertTrue(all(r['provenance_type']=='source' and r['fixture'] is True for r in rows))
+   self.assertTrue(all('synthetic' not in r for r in rows))
  def test_raw_is_unchanged_and_edits_are_refused(self):
   with tempfile.TemporaryDirectory() as td:
    c=Path(td)/'acme'; shutil.copytree(ROOT/'clients/_template',c); raw=c/'sources/raw/example.csv'
    shutil.copy(ROOT/'examples/client-fictional-medtech/sources/raw/example.csv',raw); before=raw.read_bytes()
    self.assertEqual(run(ROOT/'scripts/ingest_sources.py',c).returncode,0); self.assertEqual(raw.read_bytes(),before)
    rows=[json.loads(x) for x in (c/'evidence/evidence.jsonl').read_text().splitlines() if x]
-   self.assertEqual(len(rows),3); self.assertTrue(all(r['synthetic'] is False for r in rows))
+   self.assertEqual(len(rows),3); self.assertTrue(all(r['provenance_type']=='source' and r['fixture'] is False for r in rows))
    self.assertEqual(json.loads(run(ROOT/'scripts/ingest_sources.py',c).stdout)['sources_added'],0)
    raw.write_bytes(before+b'R4,Segment B,Wave 3,setup,"edited"\n'); batches=(c/'evidence/ingestion-batches.json').read_text()
    self.assertNotEqual(run(ROOT/'scripts/ingest_sources.py',c).returncode,0); self.assertEqual((c/'evidence/ingestion-batches.json').read_text(),batches)
    self.assertEqual(len(load_evidence(c/'evidence')),3)
 class Evidence(unittest.TestCase):
+ def write_records(self,root,fixture,records):
+  (root/'client.json').write_text(json.dumps({'client_id':'test','fixture':fixture,'real_client_data':not fixture}))
+  evidence=root/'evidence'; evidence.mkdir()
+  (evidence/'evidence.jsonl').write_text(''.join(json.dumps(record)+'\n' for record in records))
+  return load_evidence(evidence)
+ def record(self,eid,provenance,fixture,**extra):
+  return {'id':eid,'source_id':'source','source_unit':eid,'evidence_type':'text','text':'example','provenance_type':provenance,'fixture':fixture,**extra}
+ def persona_scores(self,evidence,evidence_ids):
+  persona={'claims':[{'evidence':evidence_ids,'category':'behavior','text':'test claim'}]}
+  return lint_persona(persona,evidence)
  def test_directory_merge_rejects_duplicate_ids(self):
   with tempfile.TemporaryDirectory() as td:
    d=Path(td); shutil.copy(ROOT/'examples/evidence/evidence.json',d)
    (d/'evidence.jsonl').write_text(json.dumps({'id':'E1','source_id':'S','evidence_type':'text','text':'x','synthetic':False})+'\n')
    with self.assertRaises(ValueError): load_evidence(d)
+ def test_source_is_eligible_for_fixture_and_nonfixture_records(self):
+  for fixture in (True,False):
+   with self.subTest(fixture=fixture),tempfile.TemporaryDirectory() as td:
+    evidence=self.write_records(Path(td),fixture,[self.record('E1','source',fixture)])
+    issues,scores=self.persona_scores(evidence,['E1'])
+    self.assertTrue(evidence['E1']['grounding_eligible'])
+    self.assertEqual(scores['grounded'],1)
+    self.assertFalse(any(issue['level']=='ERROR' for issue in issues))
+ def test_simulation_is_ineligible_regardless_of_fixture(self):
+  for fixture in (True,False):
+   with self.subTest(fixture=fixture),tempfile.TemporaryDirectory() as td:
+    evidence=self.write_records(Path(td),fixture,[self.record('E1','simulation',fixture)])
+    issues,scores=self.persona_scores(evidence,['E1'])
+    self.assertFalse(evidence['E1']['grounding_eligible'])
+    self.assertEqual(scores['grounded'],0)
+    self.assertTrue(any(issue['code']=='INELIGIBLE_EVIDENCE' for issue in issues))
+ def test_legacy_synthetic_true_still_maps_to_ineligible_simulation(self):
+  with tempfile.TemporaryDirectory() as td:
+   root=Path(td); (root/'client.json').write_text(json.dumps({'client_id':'legacy','fixture':True,'real_client_data':False}))
+   evidence_dir=root/'evidence'; evidence_dir.mkdir()
+   (evidence_dir/'evidence.jsonl').write_text(json.dumps({'id':'E1','source_id':'S','evidence_type':'text','text':'simulated','synthetic':True})+'\n')
+   evidence=load_evidence(evidence_dir)
+   self.assertEqual(evidence['E1']['provenance_type'],'simulation')
+   self.assertFalse(evidence['E1']['grounding_eligible'])
+ def test_analytical_requires_lineage_but_is_not_primary_grounding(self):
+  with tempfile.TemporaryDirectory() as td:
+   evidence=self.write_records(Path(td),False,[
+    self.record('E1','source',False),
+    self.record('E2','analytical',False,source_lineage=['E1']),
+    self.record('E3','analytical',False),
+   ])
+   self.assertTrue(evidence['E2']['lineage_valid'])
+   self.assertFalse(evidence['E2']['grounding_eligible'])
+   self.assertFalse(evidence['E3']['lineage_valid'])
+   self.assertFalse(evidence['E3']['grounding_eligible'])
+   issues,scores=self.persona_scores(evidence,['E2'])
+   self.assertEqual(scores['grounded'],0)
+   self.assertTrue(any(issue['code']=='INELIGIBLE_EVIDENCE' for issue in issues))
+ def test_derived_requires_traceable_lineage_method_and_scope(self):
+  with tempfile.TemporaryDirectory() as td:
+   evidence=self.write_records(Path(td),True,[
+    self.record('E1','source',True),
+    self.record('E2','derived',True,source_lineage=['E1'],derivation_method='count rows',scope='this sample'),
+    self.record('E3','derived',True,source_lineage=['missing'],derivation_method='count rows',scope='this sample'),
+    self.record('E4','derived',True,source_lineage=['E1']),
+    self.record('E5','simulation',True),
+    self.record('E6','derived',True,source_lineage=['E5'],derivation_method='summarize simulation',scope='simulation only'),
+   ])
+   self.assertTrue(evidence['E2']['grounding_eligible'])
+   self.assertFalse(evidence['E3']['grounding_eligible'])
+   self.assertFalse(evidence['E4']['grounding_eligible'])
+   self.assertFalse(evidence['E6']['grounding_eligible'])
+   issues,scores=self.persona_scores(evidence,['E2'])
+   self.assertEqual(scores['grounded'],1)
+   self.assertTrue(any(issue['code']=='DERIVED_SCOPE_REVIEW' for issue in issues))
+   for evidence_id in ('E3','E4','E6'):
+    issues,scores=self.persona_scores(evidence,[evidence_id])
+    self.assertEqual(scores['grounded'],0)
 class Hook(unittest.TestCase):
  def test_pre_commit_blocks_client_and_legacy_data(self):
   with tempfile.TemporaryDirectory() as td:
