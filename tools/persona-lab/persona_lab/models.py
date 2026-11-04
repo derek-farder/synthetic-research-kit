@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import json
 import os
+import datetime
+from pathlib import Path
+from threading import Lock
 from dataclasses import dataclass, field
 from typing import Callable, Mapping, Protocol, Sequence
 from urllib.error import HTTPError, URLError
@@ -28,6 +31,29 @@ class ChatModel(Protocol):
         max_tokens: int = 1024,
     ) -> str:
         """Return the model's assistant response."""
+
+
+@dataclass(frozen=True)
+class ModelResponse:
+    content: str
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+
+
+def complete_with_usage(
+    model: ChatModel,
+    messages: Sequence[Mapping[str, str]],
+    *,
+    temperature: float = 0.0,
+    max_tokens: int = 1024,
+) -> ModelResponse:
+    """Call a model with telemetry when supported, preserving older adapters."""
+    method = getattr(model, "complete_with_usage", None)
+    if method is None:
+        return ModelResponse(
+            model.complete(messages, temperature=temperature, max_tokens=max_tokens)
+        )
+    return method(messages, temperature=temperature, max_tokens=max_tokens)
 
 
 @dataclass(frozen=True)
@@ -139,6 +165,17 @@ class AzureOpenAIChatModel:
         temperature: float = 0.0,
         max_tokens: int = 1024,
     ) -> str:
+        return self.complete_with_usage(
+            messages, temperature=temperature, max_tokens=max_tokens
+        ).content
+
+    def complete_with_usage(
+        self,
+        messages: Sequence[Mapping[str, str]],
+        *,
+        temperature: float = 0.0,
+        max_tokens: int = 1024,
+    ) -> ModelResponse:
         url = (
             f"{self.config.endpoint}/openai/deployments/"
             f"{quote(self.config.model, safe='')}/chat/completions?"
@@ -183,7 +220,63 @@ class AzureOpenAIChatModel:
             raise ModelRequestError(
                 "Azure OpenAI response content must be a string"
             )
-        return content
+        usage = data.get("usage")
+        if usage is not None and not isinstance(usage, dict):
+            raise ModelRequestError(
+                "Azure OpenAI returned invalid token-usage metadata"
+            )
+        usage = usage or {}
+        input_tokens = usage.get("prompt_tokens")
+        output_tokens = usage.get("completion_tokens")
+        return ModelResponse(
+            content=content,
+            input_tokens=(
+                input_tokens
+                if type(input_tokens) is int and input_tokens >= 0
+                else None
+            ),
+            output_tokens=(
+                output_tokens
+                if type(output_tokens) is int and output_tokens >= 0
+                else None
+            ),
+        )
+
+
+_TELEMETRY_LOCK = Lock()
+
+
+def append_model_call_telemetry(
+    path: str | Path,
+    *,
+    operation_type: str,
+    config: ModelConfig,
+    input_tokens: int | None,
+    output_tokens: int | None,
+    persona_id: str | None = None,
+    persona_version: str | None = None,
+    study_id: str | None = None,
+    client_id: str | None = None,
+) -> dict[str, object]:
+    """Append metadata-only telemetry; prompts, responses, and credentials are excluded."""
+    event: dict[str, object] = {
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "operation_type": operation_type,
+        "provider": config.provider,
+        "model": config.model,
+        "input_tokens": input_tokens,
+        "output_tokens": output_tokens,
+        "persona_id": persona_id,
+        "persona_version": persona_version,
+        "study_id": study_id,
+        "client_id": client_id,
+    }
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with _TELEMETRY_LOCK:
+        with target.open("a", encoding="utf-8") as stream:
+            stream.write(json.dumps(event, sort_keys=True) + "\n")
+    return event
 
 
 AdapterFactory = Callable[[ModelConfig], ChatModel]

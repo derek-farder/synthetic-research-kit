@@ -95,7 +95,10 @@ class ModelAdapterTests(unittest.TestCase):
         def opener(request, timeout):
             captured.append((request, timeout))
             return FakeResponse(
-                json.dumps({"choices": [{"message": {"content": "READY"}}]}).encode()
+                json.dumps({
+                    "choices": [{"message": {"content": "READY"}}],
+                    "usage": {"prompt_tokens": 12, "completion_tokens": 4},
+                }).encode()
             )
 
         model = create_chat_model(config, opener=opener)
@@ -104,6 +107,12 @@ class ModelAdapterTests(unittest.TestCase):
         )
 
         self.assertEqual(response, "READY")
+        usage = model.complete_with_usage(
+            [{"role": "user", "content": "Reply READY."}], max_tokens=8
+        )
+        self.assertEqual(usage.content, "READY")
+        self.assertEqual(usage.input_tokens, 12)
+        self.assertEqual(usage.output_tokens, 4)
         request, timeout = captured[0]
         self.assertIsInstance(request, Request)
         self.assertIn("/deployments/persona-deployment/", request.full_url)

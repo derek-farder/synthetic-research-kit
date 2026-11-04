@@ -46,6 +46,40 @@ def check(study,client=None):
  study=study.resolve(); root=Path(__file__).resolve().parents[1]; errors=[]; warnings=[]; people={}
  client=resolve_client(root,study,client)
  if client is not None and not client.is_dir(): errors.append(f'client package not found: {client}'); return warnings,errors
+ cfg_path=study/'study.json'
+ if cfg_path.exists():
+  try:
+   cfg_data=json.loads(cfg_path.read_text())
+  except (OSError,json.JSONDecodeError) as exc:
+   errors.append(f'study.json is invalid: {exc}'); cfg_data={}
+  snapshot=cfg_data.get('execution_snapshot')
+  if cfg_data.get('study_format_version')=='3.1' and cfg_data.get('status') in ('running','complete') and snapshot is None:
+   errors.append('v3.1 executed study is missing its execution_snapshot')
+  if snapshot is not None:
+   if not isinstance(snapshot,dict): errors.append('execution_snapshot must be an object')
+   elif client is not None:
+    reg_path=client/'personas/persona-registry.json'
+    try: reg={item['id']:item for item in json.loads(reg_path.read_text())['personas']}
+    except (OSError,KeyError,json.JSONDecodeError,TypeError): reg={}
+    snapshot_personas=snapshot.get('personas',[])
+    if not isinstance(snapshot_personas,list) or not snapshot_personas: errors.append('execution_snapshot must pin personas')
+    config_pins={(item.get('id'),str(item.get('version'))) for item in cfg_data.get('personas',[]) if isinstance(item,dict)}
+    snapshot_pins={(item.get('id'),str(item.get('version'))) for item in snapshot_personas if isinstance(item,dict)} if isinstance(snapshot_personas,list) else set()
+    if config_pins!=snapshot_pins: errors.append('execution_snapshot persona pins do not match study.json')
+    for pinned in snapshot_personas if isinstance(snapshot_personas,list) else []:
+     pid=pinned.get('id'); ver=str(pinned.get('version','')); entry=reg.get(pid)
+     registered=next((v for v in entry.get('versions',[]) if str(v.get('version'))==ver),None) if entry else None
+     if not registered: errors.append(f'execution_snapshot persona {pid}@{ver} is not registered')
+     else:
+      persona_file=client/registered['file']
+      if not persona_file.exists(): errors.append(f'execution_snapshot persona file missing: {registered["file"]}')
+      elif hashlib.sha256(persona_file.read_bytes()).hexdigest()!=pinned.get('sha256'): errors.append(f'execution_snapshot persona hash mismatch for {pid}@{ver}')
+     profile=pinned.get('validation_profile')
+     if not isinstance(profile,dict) or not isinstance(profile.get('aggregate_status'),str) or not isinstance(profile.get('dimensions'),dict):
+      errors.append(f'execution_snapshot validation profile missing or malformed for {pid}@{ver}')
+   for field in ('method','output_contract','execution'):
+    if not isinstance(snapshot.get(field),dict): errors.append(f'execution_snapshot.{field} is required')
+   if not isinstance(snapshot.get('limitations'),list) or not snapshot.get('limitations'): errors.append('execution_snapshot limitations are required')
  runs=sorted((study/'runs').glob('*.md')) if (study/'runs').exists() else []
  if not runs:warnings.append('no transcripts yet')
  for f in runs:

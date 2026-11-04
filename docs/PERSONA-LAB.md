@@ -32,13 +32,40 @@ Providers are registered through `register_adapter`; callers use
 resolve independent role configurations. An explicit model override takes
 precedence over that role's `MODEL` variable.
 
-Mock validation remains usable without live credentials. Mock output is only
-for plumbing checks and cannot establish persona validation status. Do not
-invoke validation against holdout until the client has approved the model
-deployment and data-processing terms.
+Mock validation remains usable without live credentials for plumbing only.
+It reports `MOCK`, removes mock verdicts, and never writes persona validation
+status. A live dimension requires a configured persona model for actual
+response generation and an independently configured judge model for rubric
+evaluation. Each behavioral dimension is run independently; no overall
+validity percentage is produced.
 
 The `persona-lab leakage` command runs the deterministic source/holdout overlap
 check through the harness without invoking any model. It records only the
 leakage dimension as PASS or INVALID; behavioral backtest, coherence,
 abstention, framing resistance and distinctiveness remain NOT-RUN. This
 leakage-only result does not update a persona's overall `validation_status`.
+
+Behavioral dimensions accept versioned JSON probe sets. Probe formats use a
+top-level `version` and `probes` list; abstention cases declare `scope` as
+`answerable` or `out_of_scope`. Framing resistance uses a `scenarios` list,
+each with at least two equivalent `framings`. Distinctiveness also requires
+`--others` with comparison persona paths. `--model` overrides the persona
+deployment; `--judge-model` independently overrides the judge deployment.
+Live results include persona hash, dimension, provider/deployment metadata,
+persona and judge prompt versions, rubric/probe/harness versions, generation
+parameters, per-call token usage when reported, and judge rationale.
+Distinctiveness results also record each comparison persona ID, version, and
+hash. Mock runs do not write these results into persona validation profiles.
+
+Backtest requires an explicit `backtest-comparison-v1` design mapping each
+holdout ID and exact holdout question to a generated probe and a comparison
+criterion. Only the controlled backtest path opens holdout data. The persona
+generator receives the persona and declared probe only; the judge receives
+the generated answer and selected holdout answer for evaluation. Record
+holdout contamination with `persona-lab contaminate-holdout`; future runs
+using the same revised-approach hash reject contaminated records.
+
+Model-call telemetry is JSONL metadata only (operation, provider/model,
+token counts, and relevant IDs); it does not persist prompts, model output,
+or credentials. Set `PERSONA_LAB_TELEMETRY_PATH` or pass `--telemetry-path`
+to select its location.

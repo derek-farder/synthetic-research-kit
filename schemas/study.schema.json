@@ -1,1 +1,78 @@
-{"$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["client","method","output","personas","status"],"properties":{"client":{"type":"string"},"method":{"type":"string"},"output":{"const":"research-report"},"personas":{"type":"array","items":{"type":"object","required":["id","version"],"properties":{"id":{"type":"string"},"version":{"type":"string","pattern":"^\\d+(\\.\\d+)*$"}}}},"runs_per_persona":{"type":"integer","minimum":1},"status":{"enum":["draft","approved","running","complete"]}}}
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["client", "method", "output", "personas", "status"],
+  "properties": {
+    "client": {"type": "string"},
+    "method": {"type": "string"},
+    "output": {"const": "research-report"},
+    "personas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "version"],
+        "properties": {
+          "id": {"type": "string"},
+          "version": {"type": "string", "pattern": "^\\d+(\\.\\d+)*$"},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        }
+      }
+    },
+    "runs_per_persona": {"type": "integer", "minimum": 1},
+    "status": {"enum": ["draft", "approved", "running", "complete"]},
+    "study_format_version": {"const": "3.1"},
+    "execution_snapshot": {
+      "type": "object",
+      "required": [
+        "captured_at",
+        "personas",
+        "method",
+        "output_contract",
+        "execution",
+        "runs_per_persona",
+        "limitations"
+      ],
+      "properties": {
+        "captured_at": {"type": "string", "format": "date-time"},
+        "personas": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["id", "version", "sha256", "validation_profile"],
+            "properties": {
+              "id": {"type": "string"},
+              "version": {"type": "string"},
+              "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+              "validation_profile": {
+                "type": "object",
+                "required": ["aggregate_status", "dimensions"],
+                "properties": {
+                  "aggregate_status": {"type": "string"},
+                  "dimensions": {"type": "object"}
+                }
+              }
+            }
+          }
+        },
+        "method": {
+          "type": "object",
+          "required": ["id", "version"],
+          "properties": {"id": {"type": "string"}, "version": {"type": "string"}}
+        },
+        "output_contract": {
+          "type": "object",
+          "required": ["id", "version"],
+          "properties": {"id": {"type": "string"}, "version": {"type": "string"}}
+        },
+        "execution": {
+          "type": "object",
+          "required": ["provider", "model"],
+          "properties": {"provider": {"type": "string"}, "model": {"type": "string"}}
+        },
+        "runs_per_persona": {"type": "integer", "minimum": 1},
+        "limitations": {"type": "array", "items": {"type": "string"}, "minItems": 1}
+      }
+    }
+  }
+}
